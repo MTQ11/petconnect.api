@@ -3,13 +3,13 @@ import { SocialLoginProvider } from '../user.entity';
 
 export class CreateUserDto {
   @ApiProperty()
-  name: string;
+  email: string;
 
   @ApiProperty()
   phone: string;
-
+  
   @ApiProperty()
-  email: string;
+  name?: string;
 
   @ApiPropertyOptional()
   avatar?: string;
