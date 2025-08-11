@@ -12,8 +12,17 @@ export class Breed extends BaseEntity {
     species: Species;
 
     @Column()
-    name: string;
+    name_vi: string;
+
+    @Column()
+    name_en: string;
 
     @Column({ nullable: true })
-    description: string;
+    image_url: string;
+
+    @Column({ nullable: true })
+    description_vi: string;
+
+    @Column({ nullable: true })
+    description_en: string;
 }

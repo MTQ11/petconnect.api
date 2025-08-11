@@ -4,8 +4,17 @@ import { BaseEntity } from 'src/common/entities/base.entity';
 @Entity('species')
 export class Species extends BaseEntity {
     @Column()
-    name: string;
+    name_vi: string;
+
+    @Column()
+    name_en: string;
 
     @Column({ nullable: true })
-    description: string;
+    image_url: string;
+
+    @Column({ nullable: true })
+    description_vi: string;
+
+    @Column({ nullable: true })
+    description_en: string;
 }
