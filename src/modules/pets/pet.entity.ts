@@ -25,8 +25,8 @@ export class Pet extends BaseEntity {
     @Column()
     description: string;
 
-    @Column({ default: false })
-    vaccinated: boolean;
+    @Column('simple-array', { nullable: true })
+    images: string[];
 
     @Column({ type: 'uuid', name: 'species_id' })
     speciesId: string;
@@ -44,6 +44,9 @@ export class Pet extends BaseEntity {
     
     @Column({ name: 'custom_breed_name', nullable: true })
     customBreedName: string;
+
+    @Column({ default: false })
+    vaccinated: boolean;
 
     @Column({type: 'float', nullable: true})
     price: number;
