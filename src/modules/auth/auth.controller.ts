@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
@@ -21,5 +21,12 @@ export class AuthController {
     @ApiBody({ type: RegisterDto })
     async register(@Body() registerDto: RegisterDto) {
         return this.authService.register(registerDto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('me')
+    checkAuth(@Request() req) {
+        // req.user được set bởi JwtStrategy.validate
+        return req.user;
     }
 }
