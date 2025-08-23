@@ -10,6 +10,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { FavoritePetModule } from './modules/favorite-pet/favorite-pet.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AuthModule } from './modules/auth/auth.module';
     ReportsModule,
     CommentsModule,
     AuthModule,
+    FavoritePetModule,
   ]
 })
 export class AppModule {}

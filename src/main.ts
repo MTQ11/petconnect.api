@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api/v1');
+
   app.enableCors({
     origin: [
       'http://localhost:3000',
@@ -36,9 +38,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('petconnect/api', app, document);  // Swagger UI path
+  SwaggerModule.setup('petconnect/api', app, document);  // Swagger UI at /petconnect/api
 
   await app.listen(process.env.PORT ?? 3001);
   console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3001}`);
+  console.log(`Swagger UI available at: http://localhost:${process.env.PORT ?? 3001}/petconnect/api`);
+  console.log(`API endpoints available at: http://localhost:${process.env.PORT ?? 3001}/api/v1`);
 }
 bootstrap();

@@ -20,6 +20,45 @@ export class PetsService {
         });
     }
 
+    async getAllPetsWithIsLiked(userId: string): Promise<(Pet & { isLiked: boolean })[]> {
+        const pets = await this.petRepo
+            .createQueryBuilder('pet')
+            .leftJoin(
+                'favorite_pets',
+                'favorite',
+                'favorite.petId = pet.id AND favorite.userId = :userId',
+                { userId }
+            )
+            .leftJoinAndSelect('pet.species', 'species')
+            .leftJoinAndSelect('pet.breed', 'breed')
+            .leftJoinAndSelect('pet.owner', 'owner')
+            .addSelect('CASE WHEN favorite.id IS NOT NULL THEN true ELSE false END', 'isLiked')
+            .orderBy('pet.createdAt', 'DESC')
+            .getRawAndEntities();
+
+        // Map kết quả để thêm trường isLiked vào entity
+        return pets.entities.map((pet, index) => ({
+            ...pet,
+            isLiked: pets.raw[index].isLiked === true || pets.raw[index].isLiked === 'true',
+        }));
+    }
+
+    async getMyFavoritePet(userId: string): Promise<(Pet & { isLiked: boolean })[]> {
+        const pets = await this.petRepo
+            .createQueryBuilder('pet')
+            .innerJoin('favorite_pets', 'favorite', 'favorite.petId = pet.id AND favorite.userId = :userId', { userId })
+            .leftJoinAndSelect('pet.species', 'species')
+            .leftJoinAndSelect('pet.breed', 'breed')
+            .leftJoinAndSelect('pet.owner', 'owner')
+            .orderBy('pet.createdAt', 'DESC')
+            .getMany();
+
+        return pets.map(pet => ({
+            ...pet,
+            isLiked: true,
+        }));
+    }
+
     async getSimilarPets(breedId: string): Promise<Pet[]> {
         return this.petRepo.find({
             where: {breedId: breedId},
