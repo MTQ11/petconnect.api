@@ -11,6 +11,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { FavoritePetModule } from './modules/favorite-pet/favorite-pet.module';
+import { LikesModule } from './modules/likes/likes.module';
 
 @Module({
   imports: [
@@ -30,12 +31,12 @@ import { FavoritePetModule } from './modules/favorite-pet/favorite-pet.module';
     PostsModule,
     SpeciesModule,
     BreedsModule,
-    PostsModule,
     ReviewsModule,
     ReportsModule,
     CommentsModule,
     AuthModule,
     FavoritePetModule,
+    LikesModule,
   ]
 })
 export class AppModule {}

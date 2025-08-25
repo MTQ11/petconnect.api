@@ -17,7 +17,6 @@ export class PetsController {
 
     @ApiOperation({ summary: 'Lấy danh sách tất cả thú cưng' })
     @ApiResponse({ status: 200, description: 'Danh sách thú cưng', type: [Pet] })
-    @UseGuards(AuthGuard('jwt'))
     @Get()
     getAll(@CurrentUser() currentUser: ICurrentUser): Promise<Pet[]> {
         if (currentUser) {

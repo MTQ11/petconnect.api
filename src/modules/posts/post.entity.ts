@@ -1,7 +1,9 @@
-import { Column, Entity, ManyToOne, JoinColumn, ManyToMany, JoinTable } from "typeorm";
+import { Column, Entity, ManyToOne, JoinColumn, ManyToMany, JoinTable, OneToMany } from "typeorm";
 import { BaseEntity } from "src/common/entities/base.entity";
 import { Pet } from "../pets/pet.entity";
 import { User } from "../users/user.entity";
+import { Comment } from "../comments/comment.entity";
+import { Like } from "../likes/like.entity";
 
 export enum PostStatus {
     DRAFT = 'draft',
@@ -41,4 +43,15 @@ export class Post extends BaseEntity {
         default: PostStatus.DRAFT
     })
     status: PostStatus;
+
+    @OneToMany(() => Comment, comment => comment.post)
+    comments: Comment[];
+
+    // Note: Likes sẽ được load thông qua service
+    likes?: Like[];
+
+    // Virtual fields for counts
+    commentCount?: number;
+    likeCount?: number;
+    isLikedByCurrentUser?: boolean;
 }

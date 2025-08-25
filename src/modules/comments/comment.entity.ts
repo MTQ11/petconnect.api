@@ -1,7 +1,8 @@
 import { BaseEntity } from 'src/common/entities/base.entity'
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm'
 import { User } from '../users/user.entity'
 import { Post } from '../posts/post.entity'
+import { Like } from '../likes/like.entity'
 
 @Entity('comments')
 export class Comment extends BaseEntity {
@@ -28,4 +29,15 @@ export class Comment extends BaseEntity {
   @ManyToOne(() => Comment, { nullable: true })
   @JoinColumn({ name: 'parent_id' })
   parent: Comment
+
+  @OneToMany(() => Comment, comment => comment.parent)
+  replies: Comment[]
+
+  // Note: Likes sẽ được load thông qua service
+  likes?: Like[]
+
+  // Virtual fields for counts
+  replyCount?: number
+  likeCount?: number
+  isLikedByCurrentUser?: boolean
 }
