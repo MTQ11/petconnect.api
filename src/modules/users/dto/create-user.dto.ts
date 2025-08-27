@@ -22,4 +22,7 @@ export class CreateUserDto {
 
   @ApiPropertyOptional()
   address?: string;
+
+  @ApiPropertyOptional()
+  description?: string;
 }

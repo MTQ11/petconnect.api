@@ -1,6 +1,12 @@
 import { BaseEntity } from "src/common/entities/base.entity";
 import { Column, Entity } from "typeorm";
 
+export enum UserRole {
+    USER = 'user',
+    ADMIN = 'admin',
+    BREEDER = 'breeder',
+}
+
 export enum SocialLoginProvider {
     GOOGLE = 'google',
     FACEBOOK = 'facebook',
@@ -38,4 +44,17 @@ export class User extends BaseEntity {
 
     @Column({ nullable: true })
     address: string;
+
+    @Column({nullable: true})
+    description: string;
+
+    @Column({ default: false })
+    verified: boolean;
+
+    @Column({
+        type: 'enum',
+        enum: UserRole,
+        default: UserRole.USER,
+    })
+    role: UserRole;
 }

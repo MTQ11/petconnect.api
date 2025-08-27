@@ -38,6 +38,10 @@ export class AuthService {
                 rating: user.rating,
                 social_login: user.social_login,
                 address: user.address,
+                description: user.description,
+                verified: user.verified,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
             },
             access_token: await this.jwtService.signAsync(payload),
         };
@@ -76,7 +80,7 @@ export class AuthService {
 
         // Tạo JWT token
         const payload = { sub: newUser.id, username: newUser.email || newUser.phone };
-        
+
         return {
             user: {
                 id: newUser.id,
