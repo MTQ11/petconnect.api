@@ -1,0 +1,20 @@
+{
+  "section": [
+    {
+      "type": "hero",
+      "title": "Welcome to My Pet Site",
+      "subtitle": "Discover amazing pets",
+      "images": []
+    },
+    {
+      "type": "about",
+      "title": "About Me",
+      "content": "This is a default about section."
+    },
+    {
+      "type": "footer",
+      "phone": "0123-456-789",
+      "email": "user@example.com"
+    }
+  ]
+}

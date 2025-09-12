@@ -1,5 +1,7 @@
 import { BaseEntity } from "src/common/entities/base.entity";
-import { Column, Entity } from "typeorm";
+import { Column, Entity, OneToMany } from "typeorm";
+import { Post } from "../posts/post.entity";
+import { Pet } from "../pets/pet.entity";
 
 export enum UserRole {
     USER = 'user',
@@ -45,7 +47,7 @@ export class User extends BaseEntity {
     @Column({ nullable: true })
     address: string;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     description: string;
 
     @Column({ default: false })
@@ -57,4 +59,10 @@ export class User extends BaseEntity {
         default: UserRole.USER,
     })
     role: UserRole;
+
+    @OneToMany(() => Post, post => post.user)
+    posts: Post[];
+
+    @OneToMany(() => Pet, pet => pet.owner)
+    pets: Pet[];
 }

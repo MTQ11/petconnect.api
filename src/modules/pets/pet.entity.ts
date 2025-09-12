@@ -91,4 +91,7 @@ export class Pet extends BaseEntity {
     @ManyToOne(() => User)
     @JoinColumn({ name: 'owner_id' })
     owner: User;
+
+    @Column({ name: 'is_available_at_site', default: true })
+    isAvailableAtSite: boolean;
 }
