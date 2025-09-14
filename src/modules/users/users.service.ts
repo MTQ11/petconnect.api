@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
-import { RegisterDto } from '../auth/dto/register.tdo';
+import { RegisterDto } from '../auth/dto/register.dto';
 import * as bcrypt from 'bcrypt'
 import { ProfileDto } from './dto/profile.dto';
 
@@ -83,5 +83,9 @@ export class UsersService {
     async update(id: string, data: Partial<User>): Promise<User> {
         await this.userRepo.update(id, data);
         return this.findById(id);
+    }
+
+    findByGoogleId(googleId: string): Promise<User | null> {
+        return this.userRepo.findOne({ where: { google_id: googleId } });
     }
 }

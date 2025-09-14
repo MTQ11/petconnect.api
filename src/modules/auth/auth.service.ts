@@ -2,17 +2,24 @@ import { Injectable, UnauthorizedException, BadRequestException, ConflictExcepti
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { RegisterDto } from './dto/register.tdo';
+import { RegisterDto } from './dto/register.dto';
 import { jwtConstants } from './constants';
-import { User } from '../users/user.entity';
-
+import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
+import { SocialLoginProvider } from '../users/user.entity';
 
 @Injectable()
 export class AuthService {
+    private googleClient: OAuth2Client;
+
     constructor(
         private usersService: UsersService,
-        private jwtService: JwtService
-    ) { }
+        private jwtService: JwtService,
+        private configService: ConfigService
+    ) {
+        const env = this.configService.get('NODE_ENV');
+        this.googleClient = new OAuth2Client(this.configService.get('GOOGLE_CLIENT_ID'));
+    }
 
     async validateUser(username: string, password: string) {
         const user = await this.usersService.findOneWithPassword(username);
@@ -99,4 +106,78 @@ export class AuthService {
         };
     }
 
+    async loginWithGoogle(idToken: string): Promise<any> {
+        try {
+            const googleUser = await this.validateGoogleToken(idToken);
+            if (!googleUser) throw new UnauthorizedException('Google user validation failed');
+
+            let user = await this.usersService.findByGoogleId(googleUser.googleId);
+            if (!user) {
+                user = await this.usersService.findOne(googleUser.email);
+
+                if (!user) {
+                    user = await this.usersService.create({
+                        name: googleUser.name,
+                        email: googleUser.email,
+                        avatar: googleUser.picture,
+                        google_id: googleUser.googleId,
+                        verified: googleUser.emailVerified,
+                        social_login: SocialLoginProvider.GOOGLE
+                    });
+                } else {
+                    user = await this.usersService.update(user.id, {
+                        google_id: googleUser.googleId,
+                        verified: googleUser.emailVerified || user.verified,
+                        avatar: user.avatar || googleUser.picture,
+                        social_login: user.social_login === SocialLoginProvider.ZALO ? SocialLoginProvider.ALL : SocialLoginProvider.GOOGLE
+                    });
+                }
+            }
+
+            const payload = { sub: user.id, username: user.email || user.phone };
+
+            return {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    avatar: user.avatar,
+                    rating: user.rating,
+                    social_login: user.social_login,
+                    address: user.address,
+                    description: user.description,
+                    verified: user.verified,
+                    createdAt: user.createdAt,
+                    updatedAt: user.updatedAt,
+                },
+                access_token: await this.jwtService.signAsync(payload),
+            };
+        } catch (error) {
+            console.error('Google login error:', error.message);
+            throw error;
+        }
+    }
+
+    async validateGoogleToken(idToken: string): Promise<any> {
+        try {
+            const ticket = await this.googleClient.verifyIdToken({
+                idToken,
+                audience: this.configService.get('GOOGLE_CLIENT_ID'),
+            });
+
+            const payload = ticket.getPayload();
+            if (!payload) throw new UnauthorizedException('Invalid Google token');
+
+            return {
+                googleId: payload.sub,
+                email: payload.email,
+                emailVerified: payload.email_verified,
+                name: payload.name,
+                picture: payload.picture,
+            };
+        } catch (error) {
+            throw new UnauthorizedException('Failed to validate Google token');  // Throw lỗi để controller xử lý
+        }
+    }
 }

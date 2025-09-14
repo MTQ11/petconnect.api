@@ -10,8 +10,8 @@ export enum UserRole {
 }
 
 export enum SocialLoginProvider {
+    ALL = 'all',
     GOOGLE = 'google',
-    FACEBOOK = 'facebook',
     ZALO = 'zalo',
     LOCAL = 'local',
 }
@@ -27,7 +27,7 @@ export class User extends BaseEntity {
     @Column({ unique: true, nullable: true })
     email: string;
 
-    @Column({ select: false })
+    @Column({ select: false, nullable: true })
     password: string;
 
     @Column({ nullable: true })
@@ -35,14 +35,6 @@ export class User extends BaseEntity {
 
     @Column({ type: 'float', default: 0, nullable: true })
     rating: number;
-
-    @Column({
-        type: 'enum',
-        enum: SocialLoginProvider,
-        nullable: true,
-        default: SocialLoginProvider.LOCAL,
-    })
-    social_login: SocialLoginProvider;
 
     @Column({ nullable: true })
     address: string;
@@ -59,6 +51,20 @@ export class User extends BaseEntity {
         default: UserRole.USER,
     })
     role: UserRole;
+
+    @Column({
+        type: 'enum',
+        enum: SocialLoginProvider,
+        nullable: true,
+        default: SocialLoginProvider.LOCAL,
+    })
+    social_login: SocialLoginProvider;
+
+    @Column({ nullable: true })
+    google_id: string;
+
+    @Column({ nullable: true })
+    zalo_id: string;
 
     @OneToMany(() => Post, post => post.user)
     posts: Post[];
