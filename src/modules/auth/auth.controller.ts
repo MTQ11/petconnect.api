@@ -35,4 +35,9 @@ export class AuthController {
     async googleLogin(@Body() dto: GoogleLoginDto) {
         return this.authService.loginWithGoogle(dto.idToken);
     }
+
+    @Post('zalo')
+    async zaloLogin(@Body() { verifierCode, authorizationCode }: { verifierCode: string, authorizationCode: string  }) {
+        return this.authService.loginWithZalo(verifierCode, authorizationCode);
+    }
 }

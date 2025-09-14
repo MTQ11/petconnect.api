@@ -180,4 +180,107 @@ export class AuthService {
             throw new UnauthorizedException('Failed to validate Google token');  // Throw lỗi để controller xử lý
         }
     }
+
+    async loginWithZalo(verifierCode: string, authorizationCode: string): Promise<any> {
+        try {
+            const zaloUser = await this.validateZaloToken(verifierCode, authorizationCode);
+            if (!zaloUser) throw new UnauthorizedException('Zalo user validation failed');
+
+            let user = await this.usersService.findByZaloId(zaloUser.id);
+            if (!user) {
+                user = await this.usersService.create({
+                    name: zaloUser.name,
+                    avatar: zaloUser.picture.data.url,
+                    zalo_id: zaloUser.id,
+                    verified: true,
+                    social_login: SocialLoginProvider.ZALO
+                });
+            }
+            else {
+                user = await this.usersService.update(user.id, {
+                    zalo_id: zaloUser.id,
+                    verified: true,
+                    avatar: user.avatar || zaloUser.picture.data.url,
+                    social_login: user.social_login === SocialLoginProvider.GOOGLE ? SocialLoginProvider.ALL : SocialLoginProvider.ZALO
+                });
+            }
+
+            const payload = { sub: user.id, username: user.email || user.phone };
+
+            return {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    avatar: user.avatar,
+                    rating: user.rating,
+                    social_login: user.social_login,
+                    address: user.address,
+                    description: user.description,
+                    verified: user.verified,
+                    createdAt: user.createdAt,
+                    updatedAt: user.updatedAt,
+                },
+                access_token: await this.jwtService.signAsync(payload),
+            };
+        } catch (error) {
+
+        }
+    }
+
+    async validateZaloToken(verifierCode: string, authorizationCode: string): Promise<{
+        id: string;
+        name: string;
+        picture: {
+            data: {
+                url: string;
+            };
+        };
+    }> {
+        try {
+            const zaloSecretKey = this.configService.get('ZALO_SECRET_KEY');
+            const zaloAppId = this.configService.get('ZALO_APP_ID');
+            let tokenResponse;
+
+            if (zaloSecretKey && zaloAppId) {
+                tokenResponse = await fetch('https://oauth.zaloapp.com/v4/access_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'secret_key': zaloSecretKey,
+                    },
+                    body: new URLSearchParams({
+                        code: authorizationCode,
+                        app_id: zaloAppId,
+                        grant_type: 'authorization_code',
+                        code_verifier: verifierCode,
+                    }).toString()
+                });
+            }
+
+            const tokenData = await tokenResponse.json();
+            if (!tokenData.access_token) {
+                throw new UnauthorizedException('Failed to get Zalo access token');
+            }
+
+            // Lấy thông tin user từ Zalo
+            const userResponse = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+                method: 'GET',
+                headers: {
+                    'access_token': tokenData.access_token,
+                }
+            });
+
+            const userData = await userResponse.json();
+            if (!userData.id) {
+                throw new UnauthorizedException('Failed to get Zalo user data');
+            }
+
+            return userData;
+        } catch (error) {
+            console.error('Zalo token validation error:', error.message);
+            throw new UnauthorizedException('Failed to validate Zalo token');
+        }
+    }
 }
