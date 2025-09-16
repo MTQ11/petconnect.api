@@ -13,34 +13,67 @@ export class PetsService {
         private readonly petRepo: Repository<Pet>
     ){}
 
-    async getAllPets(): Promise<Pet[]> {
-        return this.petRepo.find({
-            relations: ['species', 'breed', 'owner'],
-            order: { createdAt: 'DESC' }
-        });
-    }
+    async getAllPets(userId?: string, specieId?: string, breedIds?: string[], startPrice?: number, endPrice?: number, sortBy?: string): Promise<Pet[] | (Pet & { isLiked: boolean })[]> {
+        let query;
 
-    async getAllPetsWithIsLiked(userId: string): Promise<(Pet & { isLiked: boolean })[]> {
-        const pets = await this.petRepo
-            .createQueryBuilder('pet')
-            .leftJoin(
-                'favorite_pets',
-                'favorite',
-                'favorite.petId = pet.id AND favorite.userId = :userId',
-                { userId }
-            )
-            .leftJoinAndSelect('pet.species', 'species')
-            .leftJoinAndSelect('pet.breed', 'breed')
-            .leftJoinAndSelect('pet.owner', 'owner')
-            .addSelect('CASE WHEN favorite.id IS NOT NULL THEN true ELSE false END', 'isLiked')
-            .orderBy('pet.createdAt', 'DESC')
-            .getRawAndEntities();
+        if (userId) {
+            // Query với isLiked
+            query = this.petRepo
+                .createQueryBuilder('pet')
+                .leftJoin(
+                    'favorite_pets',
+                    'favorite',
+                    'favorite.petId = pet.id AND favorite.userId = :userId',
+                    { userId }
+                )
+                .leftJoinAndSelect('pet.species', 'species')
+                .leftJoinAndSelect('pet.breed', 'breed')
+                .leftJoinAndSelect('pet.owner', 'owner')
+                .addSelect('CASE WHEN favorite.id IS NOT NULL THEN true ELSE false END', 'isLiked');
+        } else {
+            // Query bình thường
+            query = this.petRepo.createQueryBuilder('pet')
+                .leftJoinAndSelect('pet.species', 'species')
+                .leftJoinAndSelect('pet.breed', 'breed')
+                .leftJoinAndSelect('pet.owner', 'owner');
+        }
 
-        // Map kết quả để thêm trường isLiked vào entity
-        return pets.entities.map((pet, index) => ({
-            ...pet,
-            isLiked: pets.raw[index].isLiked === true || pets.raw[index].isLiked === 'true',
-        }));
+        // Áp dụng sắp xếp
+        if (sortBy === 'price_asc') {
+            query.orderBy('pet.price', 'ASC');
+        } else if (sortBy === 'price_desc') {
+            query.orderBy('pet.price', 'DESC');
+        } else if (sortBy === 'view_desc') {
+            query.orderBy('pet.view', 'DESC');
+        } else {
+            query.orderBy('pet.createdAt', 'DESC');
+        }
+
+        if (specieId) {
+            query.andWhere('species.id = :specieId', { specieId });
+        }
+
+        if (breedIds && breedIds.length > 0) {
+            query.andWhere('breed.id IN (:...breedIds)', { breedIds });
+        }
+
+        if (startPrice) {
+            query.andWhere('pet.price >= :startPrice', { startPrice });
+        }
+
+        if (endPrice) {
+            query.andWhere('pet.price <= :endPrice', { endPrice });
+        }
+
+        if (userId) {
+            const pets = await query.getRawAndEntities();
+            return pets.entities.map((pet, index) => ({
+                ...pet,
+                isLiked: pets.raw[index].isLiked === true || pets.raw[index].isLiked === 'true',
+            }));
+        } else {
+            return query.getMany();
+        }
     }
 
     async getMyFavoritePet(userId: string): Promise<(Pet & { isLiked: boolean })[]> {

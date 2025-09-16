@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { PetsService } from './pets.service';
 import { Pet } from './pet.entity';
 import { CreatePetDto } from './dto/create-pet.dto';
@@ -18,11 +18,16 @@ export class PetsController {
     @ApiOperation({ summary: 'Lấy danh sách tất cả thú cưng' })
     @ApiResponse({ status: 200, description: 'Danh sách thú cưng', type: [Pet] })
     @Get()
-    getAll(@CurrentUser() currentUser: ICurrentUser): Promise<Pet[]> {
-        if (currentUser) {
-            return this.petsService.getAllPetsWithIsLiked(currentUser.userId);
-        }
-        return this.petsService.getAllPets();
+    getAll(
+        @CurrentUser() currentUser: ICurrentUser,
+        @Query('specieId') specieId: string,
+        @Query('breedIds') breedIds: string[],
+        @Query('startPrice') startPrice: number,
+        @Query('endPrice') endPrice: number,
+        @Query('sortBy') sortBy: string
+    ): Promise<Pet[] | (Pet & { isLiked: boolean })[]> {
+        const breedIdsArray = Array.isArray(breedIds) ? breedIds : breedIds ? [breedIds] : undefined;
+        return this.petsService.getAllPets(currentUser?.userId, specieId, breedIdsArray, startPrice, endPrice, sortBy);
     }
 
     @UseGuards(AuthGuard('jwt'))
