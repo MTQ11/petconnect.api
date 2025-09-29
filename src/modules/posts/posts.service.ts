@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Post } from './post.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { LikesService } from '../likes/likes.service';
 import { Pet } from '../pets/pet.entity';
 import { DetailPostDto } from './dto/detail-post.dto';
@@ -15,8 +16,10 @@ export class PostsService {
         private readonly likesService: LikesService,
     ) { }
 
-    async getAll(userId?: string): Promise<DetailPostDto[]> {
-        const posts = await this.postsRepo.find({
+    async getAll(userId?: string, page: number = 1, limit: number = 10): Promise<{ posts: DetailPostDto[], totalPages: number, currentPage: number, hasMore: boolean }> {
+        const skip = (page - 1) * limit;
+
+        const [posts, total] = await this.postsRepo.findAndCount({
             relations: [
                 'user',
                 'pets',
@@ -24,7 +27,9 @@ export class PostsService {
                 'pets.species',
                 'comments'
             ],
-            order: { createdAt: 'DESC' }
+            order: { createdAt: 'DESC' },
+            skip,
+            take: limit
         });
 
         const result: DetailPostDto[] = [];
@@ -40,11 +45,11 @@ export class PostsService {
             const user = post.user ? {
                 id: post.user.id,
                 name: post.user.name,
-                avatarUrl: post.user.avatar
+                avatar: post.user.avatar
             } : {
                 id: '',
                 name: '',
-                avatarUrl: ''
+                avatar: ''
             };
 
             // Map pets
@@ -72,7 +77,16 @@ export class PostsService {
                 isLikedByCurrentUser
             });
         }
-        return result;
+
+        const totalPages = Math.ceil(total / limit);
+        const hasMore = page < totalPages;
+
+        return {
+            posts: result,
+            totalPages,
+            currentPage: page,
+            hasMore
+        };
     }
 
     async create(userId: string, post: CreatePostDto): Promise<Post> {
@@ -87,9 +101,21 @@ export class PostsService {
             ...rest,
             images: image,
             pets,
-            userId
+            userId,
         });
-        return this.postsRepo.save(newPost);
+        const savedPost = await this.postsRepo.save(newPost);
+
+        const postResult = await this.postsRepo.findOne({
+            where: { id: savedPost.id },
+            relations: ['user', 'pets']
+        });
+
+        if (!postResult) {
+            throw new NotFoundException('Post not found after creation');
+        }
+
+        return postResult;
+
     }
 
     async getById(id: string, userId?: string): Promise<Post> {
@@ -115,7 +141,50 @@ export class PostsService {
         return post;
     }
 
-    async delete(id: string): Promise<void> {
+    async update(id: string, userId: string, updatePostDto: UpdatePostDto): Promise<Post> {
+        const post = await this.postsRepo.findOne({
+            where: { id },
+            relations: ['user']
+        });
+
+        if (!post) {
+            throw new NotFoundException('Post not found');
+        }
+
+        if (post.userId !== userId) {
+            throw new ForbiddenException('You can only update your own posts');
+        }
+
+        // Chỉ cập nhật những trường được gửi lên
+        if (updatePostDto.content !== undefined) {
+            post.content = updatePostDto.content;
+        }
+        if (updatePostDto.imageUrl !== undefined) {
+            // Cập nhật array images nếu có imageUrl
+            post.images = updatePostDto.imageUrl ? [updatePostDto.imageUrl] : [];
+        }
+        if (updatePostDto.location !== undefined) {
+            post.location = updatePostDto.location;
+        }
+
+        post.updatedAt = new Date();
+
+        return await this.postsRepo.save(post);
+    }
+
+    async delete(id: string, userId: string): Promise<void> {
+        const post = await this.postsRepo.findOne({
+            where: { id }
+        });
+
+        if (!post) {
+            throw new NotFoundException('Post not found');
+        }
+
+        if (post.userId !== userId) {
+            throw new ForbiddenException('You can only delete your own posts');
+        }
+
         const result = await this.postsRepo.delete(id);
         if (result.affected === 0) {
             throw new NotFoundException('Post not found');

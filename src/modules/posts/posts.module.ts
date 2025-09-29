@@ -6,10 +6,11 @@ import { Post } from './post.entity';
 import { LikesModule } from '../likes/likes.module';
 import { Pet } from '../pets/pet.entity';
 import { OptionalJwtMiddleware } from 'src/common/middleware/optional-jwt.middleware';
+import { User } from '../users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post, Pet]),
+    TypeOrmModule.forFeature([Post, Pet, User]),
     LikesModule,
   ],
   controllers: [PostsController],

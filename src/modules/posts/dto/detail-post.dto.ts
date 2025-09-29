@@ -27,14 +27,14 @@ export class DetailPostDto {
         properties: {
             id: { type: 'string' },
             username: { type: 'string' },
-            avatarUrl: { type: 'string' }
+            avatar: { type: 'string' }
         }
     })
     @Expose()
     user: {
         id: string;
         name: string;
-        avatarUrl: string;
+        avatar: string;
     };
 
     @ApiProperty({

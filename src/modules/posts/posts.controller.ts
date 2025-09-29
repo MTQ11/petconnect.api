@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, Query } from '@nestjs/common';
 import { Post as PostEntity } from './post.entity';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import type { ICurrentUser } from 'src/common/interfaces/user.interface';
 import { DetailPostDto } from './dto/detail-post.dto';
@@ -14,12 +15,21 @@ export class PostsController {
     constructor(private readonly postsService: PostsService) {}
 
     @Get()
-    @ApiOperation({ summary: 'Lấy danh sách tất cả bài viết' })
-    async findAll(@CurrentUser() currentUser: ICurrentUser): Promise<DetailPostDto[]> {
+    @ApiOperation({ summary: 'Lấy danh sách tất cả bài viết với phân trang' })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Trang hiện tại (mặc định là 1)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số bài viết trên mỗi trang (mặc định là 10)' })
+    async findAll(
+        @CurrentUser() currentUser: ICurrentUser,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number
+    ): Promise<{ posts: DetailPostDto[], totalPages: number, currentPage: number, hasMore: boolean }> {
+        const pageNumber = page ? Number(page) : 1;
+        const pageSize = limit ? Number(limit) : 10;
+        
         if(currentUser) {
-            return this.postsService.getAll(currentUser.userId);
+            return this.postsService.getAll(currentUser.userId, pageNumber, pageSize);
         }else{
-            return this.postsService.getAll();
+            return this.postsService.getAll(undefined, pageNumber, pageSize);
         }
     }
 
@@ -42,10 +52,25 @@ export class PostsController {
 
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
+    @Put(':id')
+    @ApiOperation({ summary: 'Cập nhật bài viết' })
+    async update(
+        @Param('id') id: string,
+        @CurrentUser() currentUser: ICurrentUser,
+        @Body() updatePostDto: UpdatePostDto
+    ): Promise<PostEntity> {
+        return this.postsService.update(id, currentUser.userId, updatePostDto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa bài viết' })
-    async remove(@Param('id') id: string): Promise<void> {
-        return this.postsService.delete(id);
+    async remove(
+        @Param('id') id: string,
+        @CurrentUser() currentUser: ICurrentUser
+    ): Promise<void> {
+        return this.postsService.delete(id, currentUser.userId);
     }
 
     @Get('user/:userId')
