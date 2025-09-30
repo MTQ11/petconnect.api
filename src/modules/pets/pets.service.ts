@@ -199,6 +199,15 @@ export class PetsService {
         return exitsPet;
     }
 
+    async toggleStatus(id: string): Promise<Pet> {
+        const pet = await this.findById(id);
+        
+        pet.isAvailableAtSite = !pet.isAvailableAtSite;
+        
+        await this.petRepo.save(pet);
+        return pet;
+    }
+
     async remove(id: string): Promise<Pet> {
         const pet = await this.findById(id)
         await this.petRepo.remove(pet)

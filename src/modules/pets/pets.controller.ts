@@ -82,6 +82,15 @@ export class PetsController {
 
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
+    @ApiOperation({ summary: 'Toggle trạng thái hiển thị thú cưng' })
+    @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công', type: Pet })
+    @Put(':id/toggle-status')
+    togglePetStatus(@Param('id') id: string): Promise<Pet> {
+        return this.petsService.toggleStatus(id);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
     @Delete(':id')
     removePet(@Param('id') id: string): Promise<Pet> {
         return this.petsService.remove(id);
